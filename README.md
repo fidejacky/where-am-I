@@ -6,7 +6,7 @@ It is **not** a maps app. No tiles, routing or search. Just "where am I?", as a 
 
 ```console
 $ where-am-i
-51.5074, -0.1278 — London, England, GB (city-level, source: ip)
+51.51, -0.13 — London, England, GB (city-level, source: ip)
 ```
 
 ## Privacy and accuracy
@@ -15,10 +15,14 @@ IP geolocation works by sending your public IP address to a third-party service 
 
 | Source | Typical error | Status |
 | --- | --- | --- |
-| IP geolocation | about 5–25 km (city-level), can be hundreds of km off behind a VPN or on mobile | v1, default |
+| IP geolocation | median about 3–16 km on home broadband, with a long tail; 100+ km on mobile data, and further off behind a VPN | v1, default |
 | GNSS receiver (USB dongle, or a phone streaming NMEA) | about 2–5 m in open sky; no fix indoors | planned |
 
 The `source` in the output tells you which one you got. `accuracy` is only a number when the source reports one; IP lookups never do, so you see `city-level` instead of an invented radius.
+
+The IP figures come from third-party studies, not from measuring this tool: a median of 3–16 km on fixed broadband versus about 180–210 km on mobile ([Ipregistry](https://ipregistry.co/blog/mobile-ip-geolocation-cgnat)), and for US addresses MaxMind reports about 80% right at state level and 66% within 50 km at city level ([MaxMind](https://support.maxmind.com/hc/en-us/articles/4407630607131)). That is roughly one lookup in three being more than 50 km off, so treat the result as "which city, probably", never "which street".
+
+Coordinates from an IP lookup are printed to 2 decimals (about 1 km), because more digits would imply a precision the lookup doesn't have. The library still returns the values exactly as the service reported them.
 
 The place (city, region, country as a two-letter code) comes from the same IP lookup, so it is exactly as trustworthy as the coordinates: it is where the IP address is registered, not necessarily where you are.
 

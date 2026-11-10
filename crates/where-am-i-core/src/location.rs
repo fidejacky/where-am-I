@@ -20,6 +20,17 @@ impl Source {
             Source::Ip => "city-level",
         }
     }
+
+    fn coordinate_decimals(self) -> usize {
+        match self {
+            Source::Ip => 2,
+        }
+    }
+}
+
+fn round_to(value: f64, decimals: usize) -> f64 {
+    let scale = 10f64.powi(decimals as i32);
+    (value * scale).round() / scale + 0.0
 }
 
 impl fmt::Display for Source {
@@ -108,7 +119,9 @@ impl Location {
 
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:.4}, {:.4}", self.lat, self.lon)?;
+        let d = self.source.coordinate_decimals();
+        let (lat, lon) = (round_to(self.lat, d), round_to(self.lon, d));
+        write!(f, "{lat:.d$}, {lon:.d$}")?;
         if let Some(place) = &self.place {
             write!(f, " — {place}")?;
         }
@@ -129,15 +142,28 @@ mod tests {
     #[test]
     fn displays_coarse_label_when_accuracy_unknown() {
         let loc = Location::new(51.5074, -0.1278, None, Source::Ip).unwrap();
-        assert_eq!(loc.to_string(), "51.5074, -0.1278 (city-level, source: ip)");
+        assert_eq!(loc.to_string(), "51.51, -0.13 (city-level, source: ip)");
+    }
+
+    #[test]
+    fn ip_coordinates_are_rounded_for_display_but_not_in_the_data() {
+        let loc = Location::new(51.5074, -0.1278, None, Source::Ip).unwrap();
+        assert_eq!((loc.lat, loc.lon), (51.5074, -0.1278));
+        assert!(loc.to_string().starts_with("51.51, -0.13 "));
+    }
+
+    #[test]
+    fn rounding_never_prints_negative_zero() {
+        let loc = Location::new(-0.004, -0.004, None, Source::Ip).unwrap();
+        assert_eq!(loc.to_string(), "0.00, 0.00 (city-level, source: ip)");
     }
 
     #[test]
     fn displays_metres_and_kilometres() {
         let near = Location::new(1.0, 2.0, Some(3.0), Source::Ip).unwrap();
-        assert_eq!(near.to_string(), "1.0000, 2.0000 (±3 m, source: ip)");
+        assert_eq!(near.to_string(), "1.00, 2.00 (±3 m, source: ip)");
         let far = Location::new(1.0, 2.0, Some(5000.0), Source::Ip).unwrap();
-        assert_eq!(far.to_string(), "1.0000, 2.0000 (±5 km, source: ip)");
+        assert_eq!(far.to_string(), "1.00, 2.00 (±5 km, source: ip)");
     }
 
     fn place(city: Option<&str>, region: Option<&str>, country: Option<&str>) -> Option<Place> {
@@ -155,7 +181,7 @@ mod tests {
             .with_place(place(Some("London"), Some("England"), Some("GB")));
         assert_eq!(
             loc.to_string(),
-            "51.5074, -0.1278 — London, England, GB (city-level, source: ip)"
+            "51.51, -0.13 — London, England, GB (city-level, source: ip)"
         );
     }
 
@@ -166,7 +192,7 @@ mod tests {
             .with_place(place(None, Some("England"), Some("GB")));
         assert_eq!(
             loc.to_string(),
-            "1.0000, 2.0000 — England, GB (city-level, source: ip)"
+            "1.00, 2.00 — England, GB (city-level, source: ip)"
         );
     }
 
