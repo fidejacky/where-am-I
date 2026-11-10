@@ -1,0 +1,14 @@
+[package]
+name = "where-am-i-core"
+description = "A small, open positioning layer: ask where you are, get latitude and longitude."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["geolocation", "gps", "location", "position"]
+categories = ["api-bindings"]
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+ureq = "3.5.1"
