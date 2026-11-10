@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
-use crate::{Error, Location, Provider, Source};
+use crate::{Error, Location, Place, Provider, Source};
 
 const ENDPOINT: &str = "https://ipinfo.io/json";
 
@@ -61,6 +61,9 @@ impl Provider for IpInfo {
 #[derive(Deserialize)]
 struct Response {
     loc: Option<String>,
+    city: Option<String>,
+    region: Option<String>,
+    country: Option<String>,
 }
 
 fn parse(body: &str) -> Result<Location, Error> {
@@ -85,7 +88,8 @@ fn parse(body: &str) -> Result<Location, Error> {
         .parse()
         .map_err(|_| Error::BadResponse(format!("bad longitude in {loc:?}")))?;
 
-    Location::new(lat, lon, None, Source::Ip)
+    let place = Place::new(response.city, response.region, response.country);
+    Ok(Location::new(lat, lon, None, Source::Ip)?.with_place(place))
 }
 
 #[cfg(test)]
@@ -114,6 +118,27 @@ mod tests {
         assert_eq!(loc.lon, -122.0775);
         assert_eq!(loc.accuracy_m, None);
         assert_eq!(loc.source, Source::Ip);
+        assert_eq!(
+            loc.place,
+            Place::new(
+                Some("Mountain View".into()),
+                Some("California".into()),
+                Some("US".into())
+            )
+        );
+    }
+
+    #[test]
+    fn missing_or_blank_place_fields_leave_the_place_empty() {
+        assert_eq!(parse(r#"{"loc": "1.0,2.0"}"#).unwrap().place, None);
+        let blank = r#"{"loc": "1.0,2.0", "city": "", "region": " ", "country": ""}"#;
+        assert_eq!(parse(blank).unwrap().place, None);
+    }
+
+    #[test]
+    fn keeps_a_partial_place() {
+        let loc = parse(r#"{"loc": "1.0,2.0", "country": "SG"}"#).unwrap();
+        assert_eq!(loc.place, Place::new(None, None, Some("SG".into())));
     }
 
     #[test]

@@ -15,7 +15,7 @@ address to ipinfo.io. The result is city-level at best, and can be far off
 behind a VPN or on a mobile network.
 
 OUTPUT:
-    51.5074, -0.1278 (city-level, source: ip)
+    51.5074, -0.1278 — London, England, GB (city-level, source: ip)
 ";
 
 fn main() -> ExitCode {
